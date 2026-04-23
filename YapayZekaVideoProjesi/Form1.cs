@@ -38,7 +38,9 @@ namespace YapayZekaVideoProjesi
             {
                 string uretilenHikaye = await HikayeUretLLM(prompt);
                 VeritabaninaKaydet(prompt, uretilenHikaye);
+                await GorselUret(uretilenHikaye);
 
+                rtbLog.AppendText("----------------------------------\n");
                 rtbLog.AppendText("Hikaye başarıyla üretildi!\n");
                 rtbLog.AppendText("Hikaye başarıyla üretildi!\n");
                 rtbLog.AppendText("----------------------------------\n");
@@ -58,7 +60,7 @@ namespace YapayZekaVideoProjesi
 
         private async Task<string> HikayeUretLLM(string kullaniciKonusu)
         {
-            string apiKey = "Buraya_Kendi_API'nizi_Yazın.";
+            string apiKey = "BURAYA_API_ANAHTARINIZI_YAZIN";
             string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
 
             using (HttpClient client = new HttpClient())
@@ -116,5 +118,25 @@ namespace YapayZekaVideoProjesi
                 }
             }
         }
+
+        private async Task GorselUret(string hikayeMetni)
+        {
+            rtbLog.AppendText("🎨 Görsel oluşturuluyor...\n");
+
+            string kisaOzet = hikayeMetni.Length > 200 ? hikayeMetni.Substring(0, 200) : hikayeMetni;
+            string prompt = "A highly detailed cinematic illustration of: " + kisaOzet;
+            string url = "https://image.pollinations.ai/prompt/" + Uri.EscapeDataString(prompt) + "?width=640&height=360&nologo=true";
+
+            try
+            {
+                picStoryImage.LoadAsync(url);
+                rtbLog.AppendText("✔️ Görsel başarıyla oluşturuldu!\n");
+            }
+            catch (Exception ex)
+            {
+                rtbLog.AppendText("❌ Görsel hatası: " + ex.Message + "\n");
+            }
+        }
     }
 }
+    
