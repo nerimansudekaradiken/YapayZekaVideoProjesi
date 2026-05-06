@@ -31,15 +31,25 @@
             txtPrompt = new TextBox();
             btnGenerate = new Button();
             rtbLog = new RichTextBox();
-            picStoryImage = new PictureBox();
+            picSahne1 = new PictureBox();
+            picSahne2 = new PictureBox();
             label1 = new Label();
-            ((System.ComponentModel.ISupportInitialize)picStoryImage).BeginInit();
+            label2 = new Label();
+            picSahne3 = new PictureBox();
+            label3 = new Label();
+            picSahne4 = new PictureBox();
+            label4 = new Label();
+            btnVideoUret = new Button();
+            ((System.ComponentModel.ISupportInitialize)picSahne1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne4).BeginInit();
             SuspendLayout();
             // 
             // txtPrompt
             // 
             txtPrompt.BackColor = Color.LavenderBlush;
-            txtPrompt.Location = new Point(12, 37);
+            txtPrompt.Location = new Point(12, 24);
             txtPrompt.Multiline = true;
             txtPrompt.Name = "txtPrompt";
             txtPrompt.PlaceholderText = "Hikaye konusunu (prompt) buraya giriniz...";
@@ -50,45 +60,121 @@
             // btnGenerate
             // 
             btnGenerate.BackColor = Color.LavenderBlush;
-            btnGenerate.Font = new Font("Times New Roman", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnGenerate.Font = new Font("Times New Roman", 10.8F, FontStyle.Regular, GraphicsUnit.Point, 162);
             btnGenerate.ForeColor = Color.Maroon;
-            btnGenerate.Location = new Point(12, 152);
+            btnGenerate.Location = new Point(12, 139);
             btnGenerate.Name = "btnGenerate";
             btnGenerate.Size = new Size(150, 45);
             btnGenerate.TabIndex = 1;
-            btnGenerate.Text = "Hikaye Üret.\r\n";
+            btnGenerate.Text = "✍️ Hikaye Üret";
             btnGenerate.UseVisualStyleBackColor = false;
             btnGenerate.Click += btnGenerate_Click;
             // 
             // rtbLog
             // 
             rtbLog.BackColor = Color.LavenderBlush;
-            rtbLog.Location = new Point(12, 203);
+            rtbLog.Location = new Point(12, 190);
             rtbLog.Name = "rtbLog";
             rtbLog.Size = new Size(526, 284);
             rtbLog.TabIndex = 2;
             rtbLog.Text = "";
             // 
-            // picStoryImage
+            // picSahne1
             // 
-            picStoryImage.BackColor = Color.LavenderBlush;
-            picStoryImage.BorderStyle = BorderStyle.FixedSingle;
-            picStoryImage.Location = new Point(591, 37);
-            picStoryImage.Name = "picStoryImage";
-            picStoryImage.Size = new Size(562, 388);
-            picStoryImage.SizeMode = PictureBoxSizeMode.Zoom;
-            picStoryImage.TabIndex = 4;
-            picStoryImage.TabStop = false;
+            picSahne1.BackColor = Color.LavenderBlush;
+            picSahne1.BorderStyle = BorderStyle.FixedSingle;
+            picSahne1.Location = new Point(595, 24);
+            picSahne1.Name = "picSahne1";
+            picSahne1.Size = new Size(260, 215);
+            picSahne1.SizeMode = PictureBoxSizeMode.Zoom;
+            picSahne1.TabIndex = 4;
+            picSahne1.TabStop = false;
+            // 
+            // picSahne2
+            // 
+            picSahne2.BackColor = Color.LavenderBlush;
+            picSahne2.BorderStyle = BorderStyle.FixedSingle;
+            picSahne2.Location = new Point(902, 24);
+            picSahne2.Name = "picSahne2";
+            picSahne2.Size = new Size(260, 215);
+            picSahne2.SizeMode = PictureBoxSizeMode.Zoom;
+            picSahne2.TabIndex = 5;
+            picSahne2.TabStop = false;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.BackColor = Color.LavenderBlush;
-            label1.Location = new Point(591, 428);
+            label1.Location = new Point(595, 242);
             label1.Name = "label1";
-            label1.Size = new Size(104, 20);
-            label1.TabIndex = 5;
-            label1.Text = "Hikaye Görseli";
+            label1.Size = new Size(61, 20);
+            label1.TabIndex = 6;
+            label1.Text = "Sahne 1";
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.BackColor = Color.LavenderBlush;
+            label2.Location = new Point(902, 242);
+            label2.Name = "label2";
+            label2.Size = new Size(61, 20);
+            label2.TabIndex = 7;
+            label2.Text = "Sahne 2";
+            // 
+            // picSahne3
+            // 
+            picSahne3.BackColor = Color.LavenderBlush;
+            picSahne3.BorderStyle = BorderStyle.FixedSingle;
+            picSahne3.Location = new Point(595, 277);
+            picSahne3.Name = "picSahne3";
+            picSahne3.Size = new Size(260, 215);
+            picSahne3.SizeMode = PictureBoxSizeMode.Zoom;
+            picSahne3.TabIndex = 8;
+            picSahne3.TabStop = false;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.BackColor = Color.LavenderBlush;
+            label3.Location = new Point(595, 495);
+            label3.Name = "label3";
+            label3.Size = new Size(61, 20);
+            label3.TabIndex = 9;
+            label3.Text = "Sahne 3";
+            // 
+            // picSahne4
+            // 
+            picSahne4.BackColor = Color.LavenderBlush;
+            picSahne4.BorderStyle = BorderStyle.FixedSingle;
+            picSahne4.Location = new Point(902, 277);
+            picSahne4.Name = "picSahne4";
+            picSahne4.Size = new Size(260, 215);
+            picSahne4.SizeMode = PictureBoxSizeMode.Zoom;
+            picSahne4.TabIndex = 10;
+            picSahne4.TabStop = false;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.BackColor = Color.LavenderBlush;
+            label4.Location = new Point(902, 495);
+            label4.Name = "label4";
+            label4.Size = new Size(61, 20);
+            label4.TabIndex = 11;
+            label4.Text = "Sahne 4";
+            // 
+            // btnVideoUret
+            // 
+            btnVideoUret.BackColor = Color.LavenderBlush;
+            btnVideoUret.Font = new Font("Times New Roman", 10.8F, FontStyle.Regular, GraphicsUnit.Point, 162);
+            btnVideoUret.ForeColor = Color.Maroon;
+            btnVideoUret.Location = new Point(168, 139);
+            btnVideoUret.Name = "btnVideoUret";
+            btnVideoUret.Size = new Size(150, 45);
+            btnVideoUret.TabIndex = 12;
+            btnVideoUret.Text = "🎬 Video Oluştur";
+            btnVideoUret.UseVisualStyleBackColor = false;
+           btnVideoUret.Click += btnVideoUret_Click;
             // 
             // Form1
             // 
@@ -96,14 +182,24 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FloralWhite;
             ClientSize = new Size(1280, 524);
+            Controls.Add(btnVideoUret);
+            Controls.Add(label4);
+            Controls.Add(picSahne4);
+            Controls.Add(label3);
+            Controls.Add(picSahne3);
+            Controls.Add(label2);
             Controls.Add(label1);
-            Controls.Add(picStoryImage);
+            Controls.Add(picSahne2);
+            Controls.Add(picSahne1);
             Controls.Add(rtbLog);
             Controls.Add(btnGenerate);
             Controls.Add(txtPrompt);
             Name = "Form1";
             Text = "Yapay Zeka Entegrasyonlu Video Üretme Projesi ";
-            ((System.ComponentModel.ISupportInitialize)picStoryImage).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picSahne4).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -113,7 +209,14 @@
         private TextBox txtPrompt;
         private Button btnGenerate;
         private RichTextBox rtbLog;
-        private PictureBox picStoryImage;
+        private PictureBox picSahne1;
+        private PictureBox picSahne2;
         private Label label1;
+        private Label label2;
+        private PictureBox picSahne3;
+        private Label label3;
+        private PictureBox picSahne4;
+        private Label label4;
+        private Button btnVideoUret;
     }
 }
