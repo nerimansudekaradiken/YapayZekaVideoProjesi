@@ -15,7 +15,7 @@ namespace YapayZekaVideoProjesi
     public partial class Form1 : Form
     {
         string connectionString = @"Server=.;Database=AIVideoProjectDB;Trusted_Connection=True;";
-        string apiKey = "BURAYA_API_KEY_GELECEK";
+        string apiKey = "BURAYA_API_GELECEK";
 
         string sonUretilenHikaye = ""; // Sadece temiz hikaye metnini tutacak
 
@@ -23,12 +23,12 @@ namespace YapayZekaVideoProjesi
         {
             InitializeComponent();
         }
-            private void txtPrompt_TextChanged(object sender, EventArgs e)
+        private void txtPrompt_TextChanged(object sender, EventArgs e)
         {
             // Tasarımcı hatası almamak için burası durmalı
         }
-    
-        
+
+
 
         private async void btnGenerate_Click(object sender, EventArgs e)
         {
@@ -104,7 +104,7 @@ namespace YapayZekaVideoProjesi
 
                     // Ses ve Görseli üret (Sırayla)
                     await SesUret(hikayeParcalari[i], Path.Combine(Application.StartupPath, $"ses{sahneNo}.wav"));
-                    await GorselUret(resimPromptlari[i], (PictureBox)this.Controls.Find($"picSahne{sahneNo}", true)[0], $"Sahne{sahneNo}",hikayeTohumu);
+                    await GorselUret(resimPromptlari[i], (PictureBox)this.Controls.Find($"picSahne{sahneNo}", true)[0], $"Sahne{sahneNo}", hikayeTohumu);
 
                     rtbLog.AppendText($"✔️ Sahne {sahneNo} tamam.\n");
                 }
@@ -144,7 +144,7 @@ namespace YapayZekaVideoProjesi
 
                 var body = new { contents = new[] { new { parts = new[] { new { text = sistemKomutu } } } } };
                 var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
-                
+
                 var response = await client.PostAsync(url, content);
                 string resStr = await response.Content.ReadAsStringAsync();
 
@@ -157,7 +157,7 @@ namespace YapayZekaVideoProjesi
             }
         }
 
-        private async Task GorselUret(string ingilizcePrompt, PictureBox box, string ad,int seed)
+        private async Task GorselUret(string ingilizcePrompt, PictureBox box, string ad, int seed)
         {
             string yol = Path.Combine(Application.StartupPath, ad + ".jpg");
             try
@@ -223,6 +223,7 @@ namespace YapayZekaVideoProjesi
                     string parcaVideoYolu = Path.Combine(Application.StartupPath, $"sahne{i}.mp4");
 
                     string arguman = $"-y -r 25 -loop 1 -i \"{resimYolu}\" -i \"{sesYolu}\" " +
+                                     $"-vf \"scale=2560:1440,zoompan=z='1.05+0.0005*on':x='(on/375)*(iw-iw/zoom)':y='(on/375)*(ih-ih/zoom)':d=375:s=1920x1080:fps=25,fade=t=in:st=0:d=1\" " +
                                      $"-c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p " +
                                      $"-c:a aac -shortest \"{parcaVideoYolu}\"";
 
