@@ -14,21 +14,24 @@ namespace YapayZekaVideoProjesi
 {
     public partial class Form1 : Form
     {
-        string connectionString = @"Server=.;Database=AIVideoProjectDB;Trusted_Connection=True;";
-        string apiKey = "BURAYA_API_GELECEK";
+        private readonly string connectionString = @"Server=.;Database=AIVideoProjectDB;Trusted_Connection=True;";
+        private readonly string apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? "AIzaSyAwSjPh_GAJN6K9wTr3ltlXIt8t0dzaBGc";
 
-        string sonUretilenHikaye = ""; // Sadece temiz hikaye metnini tutacak
+        private static readonly HttpClient sharedClient = new HttpClient();
+
+        private string sonUretilenHikaye = "";
 
         public Form1()
         {
             InitializeComponent();
         }
+
         private void txtPrompt_TextChanged(object sender, EventArgs e)
         {
             // Tasarımcı hatası almamak için burası durmalı
         }
 
-
+        private string DosyaYoluAl(string dosyaAdi) => Path.Combine(Application.StartupPath, dosyaAdi);
 
         private async void btnGenerate_Click(object sender, EventArgs e)
         {
@@ -59,42 +62,64 @@ namespace YapayZekaVideoProjesi
                     return;
                 }
 
-                // AŞAMA 2: AYIKLAMA (PARSING)
+                // AŞAMA 2: KESİN GARANTİLİ AYIKLAMA (PARSING)
                 rtbLog.AppendText("📝 Metin ve Görsel komutları ayrıştırılıyor...\n");
 
-                string[] satirlar = geminiYanit.Split(new[] { "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
                 List<string> hikayeParcalari = new List<string>();
                 List<string> resimPromptlari = new List<string>();
 
-                foreach (var satir in satirlar)
+                string temizYanit = geminiYanit.Replace("**", "");
+                string[] satirlar = temizYanit.Split(new[] { "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
+                string aktifTur = "";
+
+                foreach (string satir in satirlar)
                 {
-                    if (satir.StartsWith("PARAGRAF"))
-                        hikayeParcalari.Add(satir.Substring(satir.IndexOf(":") + 1).Trim());
-                    else if (satir.StartsWith("PROMPT"))
-                        resimPromptlari.Add(satir.Substring(satir.IndexOf(":") + 1).Trim());
+                    string temizSatir = satir.Trim();
+                    if (string.IsNullOrWhiteSpace(temizSatir)) continue;
+
+                    string buyukSatir = temizSatir.ToUpper(new System.Globalization.CultureInfo("en-US"));
+
+                    if (buyukSatir.StartsWith("PARAGRAF") || buyukSatir.StartsWith("SAHNE"))
+                    {
+                        aktifTur = "PARAGRAF";
+                        int index = temizSatir.IndexOf(":");
+                        string icerik = (index != -1) ? temizSatir.Substring(index + 1).Trim() : temizSatir;
+                        hikayeParcalari.Add(icerik);
+                    }
+                    else if (buyukSatir.StartsWith("PROMPT") || buyukSatir.StartsWith("GÖRSEL"))
+                    {
+                        aktifTur = "PROMPT";
+                        int index = temizSatir.IndexOf(":");
+                        string icerik = (index != -1) ? temizSatir.Substring(index + 1).Trim() : temizSatir;
+                        resimPromptlari.Add(icerik);
+                    }
+                    else
+                    {
+                        if (aktifTur == "PARAGRAF" && hikayeParcalari.Count > 0)
+                            hikayeParcalari[hikayeParcalari.Count - 1] += " " + temizSatir;
+                        else if (aktifTur == "PROMPT" && resimPromptlari.Count > 0)
+                            resimPromptlari[resimPromptlari.Count - 1] += " " + temizSatir;
+                    }
                 }
 
-                // Güvenlik kontrolü
                 if (hikayeParcalari.Count < 4 || resimPromptlari.Count < 4)
                 {
-                    rtbLog.AppendText("⚠️ Uyarı: Bazı sahneler eksik üretildi!\n");
-                    btnGenerate.Enabled = true; return;
+                    rtbLog.AppendText($"⚠️ Uyarı: Sahneler eksik üretildi! (Hikaye: {hikayeParcalari.Count}, Prompt: {resimPromptlari.Count})\n");
+                    btnGenerate.Enabled = true;
+                    return;
                 }
 
-                // Video butonunun okuyacağı 'temiz' hikayeyi oluştur (Etiketler olmadan)
                 sonUretilenHikaye = string.Join("\n", hikayeParcalari);
 
                 rtbLog.AppendText("\n📜 --- ÜRETİLEN HİKAYE ---\n");
                 rtbLog.AppendText(sonUretilenHikaye + "\n");
                 rtbLog.AppendText("---------------------------\n\n");
 
-                // Veritabanına temiz hikayeyi kaydet
                 VeritabaninaKaydet(prompt, sonUretilenHikaye);
                 rtbLog.AppendText("✔️ Hikaye SQL'e kaydedildi.\n");
 
                 // AŞAMA 3: SES VE GÖRSEL ÜRETİMİ
                 rtbLog.AppendText("🎬 Sahneler hazırlanıyor...\n");
-
                 int hikayeTohumu = new Random().Next(1, 99999);
 
                 for (int i = 0; i < 4; i++)
@@ -102,8 +127,7 @@ namespace YapayZekaVideoProjesi
                     int sahneNo = i + 1;
                     rtbLog.AppendText($"🔄 Sahne {sahneNo} işleniyor...\n");
 
-                    // Ses ve Görseli üret (Sırayla)
-                    await SesUret(hikayeParcalari[i], Path.Combine(Application.StartupPath, $"ses{sahneNo}.wav"));
+                    await SesUret(hikayeParcalari[i], DosyaYoluAl($"ses{sahneNo}.wav"));
                     await GorselUret(resimPromptlari[i], (PictureBox)this.Controls.Find($"picSahne{sahneNo}", true)[0], $"Sahne{sahneNo}", hikayeTohumu);
 
                     rtbLog.AppendText($"✔️ Sahne {sahneNo} tamam.\n");
@@ -124,42 +148,40 @@ namespace YapayZekaVideoProjesi
         private async Task<string> HikayeUretLLM(string konu)
         {
             string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
-            using (HttpClient client = new HttpClient())
+
+            string sistemKomutu = "Sen profesyonel bir video senaryo yazarısın. " +
+            "Sana verilen konuyu kullanarak 4 paragraflık bir hikaye ve her paragraf için İngilizce görsel komutları (prompt) yaz. " +
+            "\n\nFORMAT ŞÖYLE OLMALIDIR:\n" +
+            "PARAGRAF 1: [Metin]\n" +
+            "PROMPT 1: [İngilizce Görsel Detaylar]\n\n" +
+            "⚠️ KRİTİK 'GÖRSEL ÇAPA' KURALI (TUTARLILIK İÇİN):\n" +
+            "Hikayenin ana konusu ne olursa olsun (insanlar, eşyalar, manzaralar veya soyut bir yapay zeka), 1. PROMPT'ta belirlediğin 'Ana Nesne'yi, 'Mekanı' ve 'Atmosferi' BİREBİR KOPYALAYARAK 2, 3 ve 4. PROMPT'ların EN BAŞINA yapıştırmalısın.\n" +
+            "Örnek İnsanlı Çapa: 'Three girls in a cozy cafe, rainy window, amber lighting...'\n" +
+            "Örnek İnsansız Çapa: 'A futuristic AI server room, glowing blue cables, dark cyberpunk atmosphere...'\n" +
+            "Bu 'çapa' metni her promptta aynı kalmalı, sadece sonuna o sahnenin ufak detayı (close up of a coffee cup, wide shot of the server, vb.) eklenmelidir.\n\n" +
+            "⚠️ DİĞER KURALLAR:\n" +
+            "1. Toplam metin 200-240 kelime olmalı.\n" +
+            "2. PROMPT kısımları tamamen İngilizce ve somut olmalı.\n" +
+            "3. Sadece istenen formatta cevap ver, açıklama yapma.\n\n" +
+            "Konu: " + konu;
+
+            var body = new { contents = new[] { new { parts = new[] { new { text = sistemKomutu } } } } };
+            var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
+
+            var response = await sharedClient.PostAsync(url, content);
+            string resStr = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
             {
-                string sistemKomutu = "Sen profesyonel bir video senaryo yazarısın. " +
-             "Sana verilen konuyu kullanarak 4 paragraflık bir hikaye ve her paragraf için İngilizce görsel komutları (prompt) yaz. " +
-             "\n\nFORMAT ŞÖYLE OLMALIDIR:\n" +
-             "PARAGRAF 1: [Metin]\n" +
-             "PROMPT 1: [İngilizce Görsel Detaylar]\n\n" +
-             "⚠️ KRİTİK 'GÖRSEL ÇAPA' KURALI (TUTARLILIK İÇİN):\n" +
-             "Hikayenin ana konusu ne olursa olsun (insanlar, eşyalar, manzaralar veya soyut bir yapay zeka), 1. PROMPT'ta belirlediğin 'Ana Nesne'yi, 'Mekanı' ve 'Atmosferi' BİREBİR KOPYALAYARAK 2, 3 ve 4. PROMPT'ların EN BAŞINA yapıştırmalısın.\n" +
-             "Örnek İnsanlı Çapa: 'Three girls in a cozy cafe, rainy window, amber lighting...'\n" +
-             "Örnek İnsansız Çapa: 'A futuristic AI server room, glowing blue cables, dark cyberpunk atmosphere...'\n" +
-             "Bu 'çapa' metni her promptta aynı kalmalı, sadece sonuna o sahnenin ufak detayı (close up of a coffee cup, wide shot of the server, vb.) eklenmelidir.\n\n" +
-             "⚠️ DİĞER KURALLAR:\n" +
-             "1. Toplam metin 200-240 kelime olmalı.\n" +
-             "2. PROMPT kısımları tamamen İngilizce ve somut olmalı.\n" +
-             "3. Sadece istenen formatta cevap ver, açıklama yapma.\n\n" +
-             "Konu: " + konu;
-
-                var body = new { contents = new[] { new { parts = new[] { new { text = sistemKomutu } } } } };
-                var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
-
-                var response = await client.PostAsync(url, content);
-                string resStr = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
-                {
-                    dynamic json = JsonConvert.DeserializeObject(resStr);
-                    return json.candidates[0].content.parts[0].text;
-                }
-                return "API Hatası: " + resStr;
+                dynamic json = JsonConvert.DeserializeObject(resStr);
+                return json.candidates[0].content.parts[0].text;
             }
+            return "API Hatası: " + resStr;
         }
 
         private async Task GorselUret(string ingilizcePrompt, PictureBox box, string ad, int seed)
         {
-            string yol = Path.Combine(Application.StartupPath, ad + ".jpg");
+            string yol = DosyaYoluAl(ad + ".jpg");
             try
             {
                 if (box.Image != null) { box.Image.Dispose(); box.Image = null; }
@@ -168,17 +190,19 @@ namespace YapayZekaVideoProjesi
 
                 string tamPrompt = $"{ingilizcePrompt}, realistic, cinematic, 8k, highly detailed";
                 string url = $"https://image.pollinations.ai/prompt/{Uri.EscapeDataString(tamPrompt)}?width=1920&height=1080&seed={seed}";
-                using (HttpClient client = new HttpClient())
+
+                var bytes = await sharedClient.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(yol, bytes);
+
+                using (var ms = new MemoryStream(bytes))
                 {
-                    var bytes = await client.GetByteArrayAsync(url);
-                    await File.WriteAllBytesAsync(yol, bytes);
-                    using (var ms = new MemoryStream(bytes))
-                    {
-                        box.Image = new Bitmap(ms);
-                    }
+                    box.Image = new Bitmap(ms);
                 }
             }
-            catch (Exception ex) { rtbLog.AppendText($"❌ Görsel Hatası ({ad}): {ex.Message}\n"); }
+            catch (Exception ex)
+            {
+                rtbLog.AppendText($"❌ Görsel Hatası ({ad}): {ex.Message}\n");
+            }
         }
 
         public async Task SesUret(string metin, string yol)
@@ -213,35 +237,80 @@ namespace YapayZekaVideoProjesi
 
             try
             {
-                string ffmpegYolu = Path.Combine(Application.StartupPath, "ffmpeg.exe");
+                string ffmpegYolu = DosyaYoluAl("ffmpeg.exe");
                 var p = sonUretilenHikaye.Split(new[] { "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
 
                 for (int i = 1; i <= 4; i++)
                 {
-                    string resimYolu = Path.Combine(Application.StartupPath, $"Sahne{i}.jpg");
-                    string sesYolu = Path.Combine(Application.StartupPath, $"ses{i}.wav");
-                    string parcaVideoYolu = Path.Combine(Application.StartupPath, $"sahne{i}.mp4");
+                    string resimYolu = DosyaYoluAl($"Sahne{i}.jpg");
+                    string sesYolu = DosyaYoluAl($"ses{i}.wav");
+                    string parcaVideoYolu = DosyaYoluAl($"sahne{i}.mp4");
+                    string srtYolu = DosyaYoluAl($"sahne{i}.srt");
+
+                    double toplamSureMs = SesSuresiniHesapla(sesYolu) * 1000;
+
+                    AltyaziSrtOlustur(p[i - 1], srtYolu, toplamSureMs);
 
                     string arguman = $"-y -r 25 -loop 1 -i \"{resimYolu}\" -i \"{sesYolu}\" " +
-                                     $"-vf \"scale=2560:1440,zoompan=z='1.05+0.0005*on':x='(on/375)*(iw-iw/zoom)':y='(on/375)*(ih-ih/zoom)':d=375:s=1920x1080:fps=25,fade=t=in:st=0:d=1\" " +
+                                     $"-vf \"scale=2560:1440,zoompan=z='1.10+0.0006*on':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':d=375:s=1920x1080:fps=25,fade=t=in:st=0:d=1,subtitles='sahne{i}.srt'\" " +
                                      $"-c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p " +
                                      $"-c:a aac -shortest \"{parcaVideoYolu}\"";
 
                     await FFmpegCalistir(ffmpegYolu, arguman);
-                    rtbLog.AppendText($"✔️ Sahne {i} MP4 hazır.\n");
+                    rtbLog.AppendText($"✔️ Sahne {i} MP4 ve Cümle Altyazıları hazır.\n");
                 }
 
-                string listeYolu = Path.Combine(Application.StartupPath, "liste.txt");
+                string listeYolu = DosyaYoluAl("liste.txt");
                 File.WriteAllText(listeYolu, "file 'sahne1.mp4'\nfile 'sahne2.mp4'\nfile 'sahne3.mp4'\nfile 'sahne4.mp4'");
 
-                string finalVideo = Path.Combine(Application.StartupPath, "Final_Hikaye.mp4");
+                string finalVideo = DosyaYoluAl("Final_Hikaye.mp4");
                 string concatArg = $"-y -f concat -safe 0 -i \"{listeYolu}\" -c copy \"{finalVideo}\"";
 
                 await FFmpegCalistir(ffmpegYolu, concatArg);
                 rtbLog.AppendText("🎥 BİTTİ! Final_Hikaye.mp4 oluşturuldu.\n");
+
+                // Videoyu bilgisayarın varsayılan oynatıcısında otomatik olarak açar
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+                {
+                    FileName = finalVideo,
+                    UseShellExecute = true
+                });
             }
             catch (Exception ex) { rtbLog.AppendText("❌ Video Hatası: " + ex.Message + "\n"); }
             finally { btnVideoUret.Enabled = true; }
+        }
+
+        private void AltyaziSrtOlustur(string paragraf, string srtYolu, double toplamSureMs)
+        {
+            string srtIcerik = "";
+            int srtSira = 1;
+            double suankiZamanMs = 0;
+
+            string[] cumleler = paragraf.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+            int toplamKarakter = paragraf.Length;
+
+            foreach (string cumle in cumleler)
+            {
+                string temizCumle = cumle.Trim();
+                if (string.IsNullOrWhiteSpace(temizCumle)) continue;
+
+                temizCumle += ".";
+
+                double oran = (double)temizCumle.Length / (double)toplamKarakter;
+                double cumleSuresiMs = toplamSureMs * oran;
+
+                TimeSpan baslangic = TimeSpan.FromMilliseconds(suankiZamanMs);
+                suankiZamanMs += cumleSuresiMs;
+                TimeSpan bitis = TimeSpan.FromMilliseconds(suankiZamanMs);
+
+                srtIcerik += $"{srtSira}\r\n";
+                srtIcerik += $"{baslangic:hh\\:mm\\:ss\\,fff} --> {bitis:hh\\:mm\\:ss\\,fff}\r\n";
+                srtIcerik += $"{temizCumle}\r\n\r\n";
+
+                srtSira++;
+            }
+
+            File.WriteAllText(srtYolu, srtIcerik, new System.Text.UTF8Encoding(false));
         }
 
         private async Task FFmpegCalistir(string ffmpegYolu, string argumanlar)
@@ -251,7 +320,8 @@ namespace YapayZekaVideoProjesi
                 FileName = ffmpegYolu,
                 Arguments = argumanlar,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WorkingDirectory = Application.StartupPath
             };
             using (var process = System.Diagnostics.Process.Start(psi))
             {
@@ -273,6 +343,7 @@ namespace YapayZekaVideoProjesi
                     cmd.Parameters.AddWithValue("@i2", "Sahne2.jpg");
                     cmd.Parameters.AddWithValue("@i3", "Sahne3.jpg");
                     cmd.Parameters.AddWithValue("@i4", "Sahne4.jpg");
+
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
@@ -287,9 +358,26 @@ namespace YapayZekaVideoProjesi
             GC.WaitForPendingFinalizers();
             for (int i = 1; i <= 4; i++)
             {
-                string p = Path.Combine(Application.StartupPath, $"Sahne{i}.jpg");
+                string p = DosyaYoluAl($"Sahne{i}.jpg");
                 if (File.Exists(p)) try { File.Delete(p); } catch { }
             }
+        }
+
+        private double SesSuresiniHesapla(string wavYolu)
+        {
+            try
+            {
+                byte[] header = new byte[32];
+                using (FileStream fs = new FileStream(wavYolu, FileMode.Open, FileAccess.Read))
+                {
+                    fs.Read(header, 0, 32);
+                }
+                int byteRate = BitConverter.ToInt32(header, 28);
+                long fileSize = new FileInfo(wavYolu).Length;
+
+                return (double)(fileSize - 44) / byteRate;
+            }
+            catch { return 15.0; }
         }
     }
 }
