@@ -58,7 +58,6 @@
             txtPrompt.ScrollBars = ScrollBars.Vertical;
             txtPrompt.Size = new Size(534, 109);
             txtPrompt.TabIndex = 0;
-            txtPrompt.TextChanged += txtPrompt_TextChanged;
             // 
             // btnGenerate
             // 

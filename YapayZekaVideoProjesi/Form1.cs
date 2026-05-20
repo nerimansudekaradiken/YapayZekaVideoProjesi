@@ -15,7 +15,7 @@ namespace YapayZekaVideoProjesi
     public partial class Form1 : Form
     {
         private readonly string connectionString = @"Server=.;Database=AIVideoProjectDB;Trusted_Connection=True;";
-        private readonly string apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? "AIzaSyAwSjPh_GAJN6K9wTr3ltlXIt8t0dzaBGc";
+        private readonly string apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
 
         private static readonly HttpClient sharedClient = new HttpClient();
 
@@ -23,12 +23,7 @@ namespace YapayZekaVideoProjesi
 
         public Form1()
         {
-            InitializeComponent();
-        }
-
-        private void txtPrompt_TextChanged(object sender, EventArgs e)
-        {
-            // Tasarımcı hatası almamak için burası durmalı
+            InitializeComponent(); // Form çalıştığında görsel arayüzü (butonlar, renkler vb.) ekrana çizer.
         }
 
         private string DosyaYoluAl(string dosyaAdi) => Path.Combine(Application.StartupPath, dosyaAdi);
@@ -120,7 +115,7 @@ namespace YapayZekaVideoProjesi
 
                 // AŞAMA 3: SES VE GÖRSEL ÜRETİMİ
                 rtbLog.AppendText("🎬 Sahneler hazırlanıyor...\n");
-                int hikayeTohumu = new Random().Next(1, 99999);
+                int hikayeTohumu = new Random().Next(1, 99999); // Videonun görsel tutarlılığını sağlar.
 
                 for (int i = 0; i < 4; i++)
                 {
@@ -165,7 +160,7 @@ namespace YapayZekaVideoProjesi
             "3. Sadece istenen formatta cevap ver, açıklama yapma.\n\n" +
             "Konu: " + konu;
 
-            var body = new { contents = new[] { new { parts = new[] { new { text = sistemKomutu } } } } };
+            var body = new { contents = new[] { new { parts = new[] { new { text = sistemKomutu } } } } }; // Veriyi JSON formatına çevirmeye yarar.
             var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
 
             var response = await sharedClient.PostAsync(url, content);
@@ -207,7 +202,8 @@ namespace YapayZekaVideoProjesi
 
         public async Task SesUret(string metin, string yol)
         {
-            await Task.Run(() => {
+            await Task.Run(() =>
+            {
                 using (var synth = new SpeechSynthesizer())
                 {
                     foreach (var voice in synth.GetInstalledVoices())
@@ -379,5 +375,6 @@ namespace YapayZekaVideoProjesi
             }
             catch { return 15.0; }
         }
+
     }
 }
